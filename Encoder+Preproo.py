@@ -127,12 +127,6 @@ def train(model,num_epochs,optimizer,lr): # Have to implement this
     return
 
 
-# In[244]:
-
-
-print(np.dot(w2v['rock'],w2v['banana']))
-
-
 
 
 
