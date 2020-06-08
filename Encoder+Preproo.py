@@ -65,7 +65,7 @@ for i in range(len(X_train_prelim)): # This is basically tokenising each sentenc
         try:
             vectorx.append(embedded_words[int(vocab_inv[word])])
         except:
-            vectorx.append(-2*torch.rand(100,1))
+            vectorx.append(-2*torch.rand(100,1)) # If the word is not in the embeddings given, then add a random vector (might have to do something about this :) ) (Potentially could write a spell checker to find misspellings)
     for word in tokensy:
         try:
             vectorx.append(embedded_words[int(vocab_inv[word])])
