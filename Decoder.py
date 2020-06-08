@@ -17,10 +17,23 @@ class Decoder(nn.Module):
         self.hidden_size = hidden_size
         self.num_layers = num_layers
 
-        ### QUESTION: In the paper they have, what looks like, average across text, right?
-        self.local_loss_contrib = nn.CrossEntropyLoss()
-
         self.init_weights(embedding_dims, hidden_size, num_layers)
+
+    def local_loss_contrib(self, q_hat, q_real):
+        ### QUESTION: In the paper they have, what looks like, average across text, right?
+        sentence_length = q_hat.shape[0]
+
+        
+        s = 0
+        
+        for i in range(q_hat.shape[0]):
+            print(i)
+            
+            dot = torch.dot(q_hat[i], q_real[i])
+            s += dot
+            print(dot)
+
+        return -(1/sentence_length)*s
 
 
     def init_weights(self, embedding_dims, hidden_size, num_layers):
@@ -37,6 +50,7 @@ class Decoder(nn.Module):
         A forward pass on the LSTM decoder. Input and ground truth come in size [sentence length, batch size, embedding dims]
         """
 
+
         # Initialise hidden layer and cell state, size = [num_layers*num_directions, batch, hidden_size]
         h0 = torch.zeros((self.num_layers, sentence.size()[1], self.hidden_size))
         c0 = torch.zeros((self.num_layers, sentence.size()[1], self.hidden_size))
@@ -52,8 +66,8 @@ class Decoder(nn.Module):
 
         # Softmax p to get q_hat
         q_hat = self.softmax(p)
-        
-        print(q_hat.size(), q_real.size())
+        q_real = torch.mean(q_real, axis = 1)
+        q_hat = torch.mean(q_hat, axis = 1)
 
         # CROSS ENTROPY TAKEN OVER dim 0 (i.e. sentence length)
         # This is one of the terms at in the L_local summation, which must later be added up and divided
@@ -79,3 +93,6 @@ def trial_forward_run():
     gtt = torch.randn(5, 3, embedding_dims)
 
     loss, q_hat = decoder.forward(inp, gtt)
+    print(loss)
+
+trial_forward_run()
