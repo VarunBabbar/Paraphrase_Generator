@@ -47,14 +47,17 @@ class Decoder(nn.Module):
     
     def forward(self, sentence, q_real):
         """
-        A forward pass on the LSTM decoder. Input and ground truth come in size [sentence length, batch size, embedding dims]
+        A forward pass on the LSTM decoder. Input and ground truth come in as matrix of indicies, later embedded to size [sentence length, batch size, embedding dims]
         """
 
         # Initialise hidden layer and cell state, size = [num_layers*num_directions, batch, hidden_size]
+
         h0 = torch.zeros((self.num_layers, sentence.size()[1], self.hidden_size))
         c0 = torch.zeros((self.num_layers, sentence.size()[1], self.hidden_size))
         
         _, (h0, c0), sentence = self.Encoder.forward(sentence, (h0, c0), True)
+
+        sentence = self.Encoder.embedding(sentence)
 
         # dt = Wd * qt = d-weights * previously predicted word
         dt = self.Wd(sentence)

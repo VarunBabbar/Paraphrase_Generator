@@ -28,9 +28,6 @@ class Encoder(nn.Module): # Encoder with a single layer LSTM
         embed = self.embedding(x) # Looking up embeddings
         output, curr_state = self.dropout(self.lstm_layer(embed, prev_state))
 
-        if for_decode:
-            return output, curr_state, embed
-
         # Here curr_state is the tuple (hidden state, cell state)
         return output,curr_state
     
