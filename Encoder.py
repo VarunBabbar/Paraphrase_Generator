@@ -38,24 +38,24 @@ X_val_prelim = [val_examples[i]['question1'] for i in range(len(val_examples))]
 Y_val_prelim = [val_examples[i]['question'] for i in range(len(val_examples))]
 
 def load_glove_embeddings(filename="glove.6B.100d.txt"):
-
-    with open("embeddings", "rb") as f:
-        embeddings = pickle.load(f)
+    try:
+        with open("embeddings", "rb") as f:
+            embeddings = pickle.load(f)
         return embeddings
-
-    lines = open(filename).readlines()
-    print(len(lines))
-    embeddings = {}
-    a = 0
-    for line in lines:
-        a +=1
-        print(a)
-        word = line.split()[0]
-        embedding = list(map(float, line.split()[1:]))
-        if word in vocab.values():
-            embeddings[int(vocab_inv[word])] = embedding # This is creating a dictionary with indexes corresponding to the position of the particular word in the vocabulary
-            # embeddings = {1:embedding of 'the', 2: embedding of 'sauce'....}
-    return embeddings
+    except:
+        lines = open(filename).readlines()
+        print(len(lines))
+        embeddings = {}
+        a = 0
+        for line in lines:
+            a +=1
+            print(a)
+            word = line.split()[0]
+            embedding = list(map(float, line.split()[1:]))
+            if word in vocab.values():
+                embeddings[int(vocab_inv[word])] = embedding # This is creating a dictionary with indexes corresponding to the position of the particular word in the vocabulary
+                # embeddings = {1:embedding of 'the', 2: embedding of 'sauce'....}
+        return embeddings
 
 def tokenize_embed(X,Y): # Doing this for training and validation_datasets
     X_train = []
