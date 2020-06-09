@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[248]:
 
 import torch
 import torch.nn as nn
@@ -25,9 +24,12 @@ class Encoder(nn.Module): # Encoder with a single layer LSTM
         self.embedded_words = embedded_words
         self.init_weights()
         
-    def forward(self, x, prev_state):  # X corresponds to the index of the word in the vocabulary (so X can be 2 or 49 etc, and embedding(x) will give the word vector of the 2nd or 49th word in the vocabulary)
+    def forward(self, x, prev_state, for_decode):  # X corresponds to the index of the word in the vocabulary (so X can be 2 or 49 etc, and embedding(x) will give the word vector of the 2nd or 49th word in the vocabulary)
         embed = self.embedding(x) # Looking up embeddings
         output, curr_state = self.dropout(self.lstm_layer(embed, prev_state))
+
+        if for_decode:
+            return output, curr_state, embed
 
         # Here curr_state is the tuple (hidden state, cell state)
         return output,curr_state
@@ -66,9 +68,3 @@ def trial_encoder():
 
     def train(model,num_epochs,optimizer,lr): # Have to implement this
         return
-
-
-
-
-
-

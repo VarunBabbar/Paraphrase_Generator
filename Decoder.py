@@ -50,12 +50,11 @@ class Decoder(nn.Module):
         A forward pass on the LSTM decoder. Input and ground truth come in size [sentence length, batch size, embedding dims]
         """
 
-        if self.Encoder == None:
-            # Initialise hidden layer and cell state, size = [num_layers*num_directions, batch, hidden_size]
-            h0 = torch.zeros((self.num_layers, sentence.size()[1], self.hidden_size))
-            c0 = torch.zeros((self.num_layers, sentence.size()[1], self.hidden_size))
-        else:
-            _, (h0, c0) = self.Encoder.forward()
+        # Initialise hidden layer and cell state, size = [num_layers*num_directions, batch, hidden_size]
+        h0 = torch.zeros((self.num_layers, sentence.size()[1], self.hidden_size))
+        c0 = torch.zeros((self.num_layers, sentence.size()[1], self.hidden_size))
+        
+        _, (h0, c0), sentence = self.Encoder.forward(sentence, (h0, c0), True)
 
         # dt = Wd * qt = d-weights * previously predicted word
         dt = self.Wd(sentence)
