@@ -176,8 +176,14 @@ def Discriminator():
     def backward(self): # Have to call loss.backward()
         return 0
     
-    def global_loss(self,encoded_gt,encoded_pred): # Have to implement global loss_function
-        return 0
+    def global_loss(self,encoded_gt,encoded_pred): # Assuming encoded gt and pred are the hidden state of the encoder LSTM at time t
+        loss = 0
+        for i in range(bs):
+            for j in range(bs):
+                dot1 = torch.dot(encoded_pred[encoder.num_layers-1:,i,encoder.max_sentence_length].squeeze(),encoded_gt[:,j,encoder.max_sentence_length].squeeze())
+                dot2 = torch.dot(encoded_pred[encoder.num_layers-1,i,encoder.max_sentence_length].squeeze(),encoded_gt[:,i,encoder.max_sentence_length].squeeze())
+                loss += torch.max(0,dot1-dot2+1)
+        return loss
         
 encoder = Encoder(max_sentence_length,input_size,hidden_size,dropout,vocab_size,num_layers,bs,bidirectional)
 encoder.train(X_train)
