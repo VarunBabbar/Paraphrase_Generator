@@ -27,11 +27,9 @@ class Decoder(nn.Module):
         s = 0
         
         for i in range(q_hat.shape[0]):
-            print(i)
             
             dot = torch.dot(q_hat[i], q_real[i])
             s += dot
-            print(dot)
 
         return -(1/sentence_length)*s
 
@@ -54,10 +52,12 @@ class Decoder(nn.Module):
 
         h0 = torch.zeros((self.num_layers, sentence.size()[1], self.hidden_size))
         c0 = torch.zeros((self.num_layers, sentence.size()[1], self.hidden_size))
-        
-        _, (h0, c0), sentence = self.Encoder.forward(sentence, (h0, c0), True)
 
-        sentence = self.Encoder.embedding(sentence)
+        sentence = sentence.long()
+        
+        _, (h0, c0), sentence = self.Encoder.forward(sentence, (h0, c0))
+        q_real = self.Encoder.embedding(q_real.long())
+
 
         # dt = Wd * qt = d-weights * previously predicted word
         dt = self.Wd(sentence)

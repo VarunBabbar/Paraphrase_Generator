@@ -21,13 +21,13 @@ import requests
 from torch.nn.utils.rnn import pad_sequence
 # # Loading all training examples, validation examples, and vocabulary
 
-with open('/Users/varunbabbar/Desktop/Good_Quotes/Paraphrase_Generator/Paraphrase_Generator/quora_raw_train.json') as f:
+with open('quora_raw_train.json') as f:
     training_examples = json.load(f)
     
-with open('/Users/varunbabbar/Desktop/Good_Quotes/Paraphrase_Generator/Paraphrase_Generator/quora_raw_val.json') as f:
+with open('quora_raw_val.json') as f:
     val_examples = json.load(f)
 
-with open('/Users/varunbabbar/Desktop/Good_Quotes/Paraphrase_Generator/Paraphrase_Generator/quora_data_prepro.json') as f:
+with open('quora_data_prepro.json') as f:
     vocab = json.load(f)['ix_to_word'] # Vocab = {1: 'the', 2: 'sauce' .....}
 vocab_inv = {word:number for number,word in list(vocab.items())} # Inverted dictionary created   Vocab_inv = {'the':1, 'sauce':2, .....}
 
@@ -37,20 +37,25 @@ Y_train_prelim = [training_examples[i]['question'] for i in range(len(training_e
 X_val_prelim = [val_examples[i]['question1'] for i in range(len(val_examples))]
 Y_val_prelim = [val_examples[i]['question'] for i in range(len(val_examples))]
 
-# def load_glove_embeddings(filename="glove.6B.100d.txt"):
-#     lines = open(filename).readlines()
-#     print(len(lines))
-#     embeddings = {}
-#     a = 0
-#     for line in lines:
-#         a +=1
-#         print(a)
-#         word = line.split()[0]
-#         embedding = list(map(float, line.split()[1:]))
-#         if word in vocab.values():
-#             embeddings[int(vocab_inv[word])] = embedding # This is creating a dictionary with indexes corresponding to the position of the particular word in the vocabulary
-#             # embeddings = {1:embedding of 'the', 2: embedding of 'sauce'....}
-#     return embeddings
+def load_glove_embeddings(filename="glove.6B.100d.txt"):
+
+    with open("embeddings", "rb") as f:
+        embeddings = pickle.load(f)
+        return embeddings
+
+    lines = open(filename).readlines()
+    print(len(lines))
+    embeddings = {}
+    a = 0
+    for line in lines:
+        a +=1
+        print(a)
+        word = line.split()[0]
+        embedding = list(map(float, line.split()[1:]))
+        if word in vocab.values():
+            embeddings[int(vocab_inv[word])] = embedding # This is creating a dictionary with indexes corresponding to the position of the particular word in the vocabulary
+            # embeddings = {1:embedding of 'the', 2: embedding of 'sauce'....}
+    return embeddings
 
 def tokenize_embed(X,Y): # Doing this for training and validation_datasets
     X_train = []
@@ -73,9 +78,9 @@ def tokenize_embed(X,Y): # Doing this for training and validation_datasets
                 vectory.append(int(vocab_inv[word]))
             except:
                 vectory.append(258)
-        X.append(vectorx)
-        Y.append(vectory)
-    return X,Y
+        X_train.append(vectorx)
+        Y_train.append(vectory)
+    return X_train,Y_train
 
 def clip_pad_input_sequences(X,Y,min_sentence_length,max_sentence_length): # Doing this for training and validation datasets
     X_training_clipped = []
@@ -95,10 +100,8 @@ def find_closest_embedding(output,vocab,embedded_words): # Need this because we 
 min_sentence_length = 7
 min_sentence_length = 16
 
-# embedded_words = load_glove_embeddings()
+embedded_words = load_glove_embeddings()
 
-X_train,Y_train = clip_pad_input_sequences(*tokenize_embed(X_train_prelim,Y_train_prelim,),min_sentence_length,max_sentence_length)
-X_valid,Y_valid = clip_pad_input_sequences(*tokenize_embed(X_val_prelim,Y_val_prelim,),min_sentence_length,max_sentence_length)
 
 
 input_size = 100 # Size of embedding
@@ -109,6 +112,11 @@ vocab_size = len(vocab)
 dropout = 0.2
 bidirectional = False
 max_sentence_length = 16 # Max number of words in a sentence
+
+
+X_train,Y_train = clip_pad_input_sequences(*tokenize_embed(X_train_prelim,Y_train_prelim,),min_sentence_length,max_sentence_length)
+X_valid,Y_valid = clip_pad_input_sequences(*tokenize_embed(X_val_prelim,Y_val_prelim,),min_sentence_length,max_sentence_length)
+
 
 class Encoder(nn.Module): # Encoder with a single layer LSTM 
     def __init__(self,max_sentence_length,input_size,hidden_size,dropout,vocab_size,num_layers,bs,bidirectional= False):
@@ -130,7 +138,7 @@ class Encoder(nn.Module): # Encoder with a single layer LSTM
         embed = self.embedding(x) # Looking up embeddings
         embed = torch.reshape(torch.Tensor(embed),(self.max_sentence_length,self.bs,self.input_size))
         output, curr_state = self.lstm_layer(embed, prev_state)
-        return output,curr_state
+        return output,curr_state, embed
     
     def init_weights(self): # Initialising weights
         init.orthogonal_(self.lstm_layer.weight_ih_l0)
@@ -158,10 +166,11 @@ def Discriminator():
         self.ground_truth_sentence = ground_truth_sentence # Batch input of GT sequence: eg input = [3,444,5234,64,88] where 3 = embedding of word 3 in vocab and so on
         self.predicted_sentence = predicted_sentence # Batch input of predicted sequence: eg input = [3,444,5234,64,88] where 3 = embedding of word 3 in vocab and so on
         self.encoder = encoder # encoder module
+
     def forward(self): # Prev state is the hidden state and cell state of the encoder at the given timestep
         _,(encoded_gt,_)= encoder.forward(self.ground_truth_sentence,prev_state)
         _,(encoded_pred,_) = encoder.forward(self.predicted_sentence,prev_state)
-        loss = global_loss(encoded_gt,encoded_pred)
+        loss = self.global_loss(encoded_gt,encoded_pred)
         return loss
         
     def backward(self): # Have to call loss.backward()
@@ -182,106 +191,4 @@ optimizer = torch.optim.Adam(encoder.parameters(), lr=learning_rate)
 # Input = seq length, batch, input_size
 # Hidden state = num_layers * num_directions, batch, hidden_size
 # Zero-pad the sentences to the same 
-
-
-# In[244]:
-
-
-# In[10]:
-
-
-def load_glove_embeddings(filename="glove.6B.100d.txt"):
-    lines = open(filename).readlines()
-    print(len(lines))
-    embeddings = {}
-    a = 0
-    for line in lines:
-        a +=1
-        print(a)
-        word = line.split()[0]
-        embedding = list(map(float, line.split()[1:]))
-        if word in vocab.values():
-            embeddings[int(vocab_inv[word])] = embedding # This is creating a dictionary with indexes corresponding to the position of the particular word in the vocabulary
-            # embeddings = {1:embedding of 'the', 2: embedding of 'sauce'....}
-    return embeddings
-
-
-embedded_words = load_glove_embeddings()
-
-
-# In[11]:
-
-
-import pickle
-with open('/Users/varunbabbar/Desktop/Good_Quotes/Paraphrase_Generator/Paraphrase_Generator/X_train_Quora','rb') as f:
-    X_train = pickle.load(f)
-with open('/Users/varunbabbar/Desktop/Good_Quotes/Paraphrase_Generator/Paraphrase_Generator/Y_train_Quora','rb') as f:
-    Y_train = pickle.load(f)
-with open('/Users/varunbabbar/Desktop/Good_Quotes/Paraphrase_Generator/Paraphrase_Generator/embeddings','rb') as f:
-    embedded_words = pickle.load(f)
-
-
-# In[73]:
-
-
-# sentence = 'I like to eat apples.'.lower()
-# curr_state = (torch.zeros(num_layers,bs,hidden_size),torch.zeros(num_layers,bs,hidden_size)) 
-# a = list(zip(X_train,Y_train))
-# first = lambda x: len(x)
-# sorted_list = sorted(a, key=first)
-# X_train = [i[0] for i in sorted_list]
-# Y_train = [i[1] for i in sorted_list]
-
-for index,wordx in enumerate(X_training_clipped):
-    print(index,len(wordx))
-    wordx = torch.reshape(torch.Tensor(wordx),(bs,len(wordx)))
-    output, curr_state = encoder.forward(wordx.long(),(curr_state[0],curr_state[1]))
-
-# Input = seq length, batch, input_size
-# Hidden state = num_layers * num_directions, batch, hidden_size
-# Zero-pad the sentences to the same 
-    
-
-
-# In[ ]:
-
-
-
-
-
-# In[74]:
-
-
-
-
-# a = list(zip(X_train,Y_train))
-# first = lambda x: len(x)
-# sorted_list = sorted(a, key=first)
-# X = [i[0] for i in sorted_list]
-# Y = [i[1] for i in sorted_list]
-# print(X[55])
-# print(Y[55])
-# print("Hi")
-# u = [len(i) for i in X]
-# o = 0
-
-#         o+=1
-# print(o)
-
-
-# print(padded_X_training_clipped.shape
-encoder.train(padded_X_training_clipped)
-
-
-# In[72]:
-
-
-print(padded_X_training_clipped.shape[1]//128)
-print(padded_X_training_clipped.shape[1])
-
-
-# In[ ]:
-
-
-
 
