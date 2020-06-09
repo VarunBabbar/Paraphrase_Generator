@@ -4,7 +4,7 @@ import torch
 
 class Decoder(nn.Module):
 
-    def __init__(self, embedding_dims, hidden_size, num_layers = 1, Encoder = None):
+    def __init__(self, Encoder, embedding_dims, hidden_size, num_layers = 1):
         super(Decoder, self).__init__()
 
         self.Encoder = Encoder
@@ -50,10 +50,12 @@ class Decoder(nn.Module):
         A forward pass on the LSTM decoder. Input and ground truth come in size [sentence length, batch size, embedding dims]
         """
 
-
-        # Initialise hidden layer and cell state, size = [num_layers*num_directions, batch, hidden_size]
-        h0 = torch.zeros((self.num_layers, sentence.size()[1], self.hidden_size))
-        c0 = torch.zeros((self.num_layers, sentence.size()[1], self.hidden_size))
+        if self.Encoder == None:
+            # Initialise hidden layer and cell state, size = [num_layers*num_directions, batch, hidden_size]
+            h0 = torch.zeros((self.num_layers, sentence.size()[1], self.hidden_size))
+            c0 = torch.zeros((self.num_layers, sentence.size()[1], self.hidden_size))
+        else:
+            pass
 
         # dt = Wd * qt = d-weights * previously predicted word
         dt = self.Wd(sentence)
@@ -94,5 +96,3 @@ def trial_forward_run():
 
     loss, q_hat = decoder.forward(inp, gtt)
     print(loss)
-
-trial_forward_run()
