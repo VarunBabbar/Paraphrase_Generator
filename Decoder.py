@@ -55,7 +55,7 @@ class Decoder(nn.Module):
             h0 = torch.zeros((self.num_layers, sentence.size()[1], self.hidden_size))
             c0 = torch.zeros((self.num_layers, sentence.size()[1], self.hidden_size))
         else:
-            h0, c0 = self.Encoder.forward()
+            _, (h0, c0) = self.Encoder.forward()
 
         # dt = Wd * qt = d-weights * previously predicted word
         dt = self.Wd(sentence)
