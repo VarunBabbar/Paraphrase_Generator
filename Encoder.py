@@ -197,4 +197,3 @@ optimizer = torch.optim.Adam(encoder.parameters(), lr=learning_rate)
 # Input = seq length, batch, input_size
 # Hidden state = num_layers * num_directions, batch, hidden_size
 # Zero-pad the sentences to the same 
-
