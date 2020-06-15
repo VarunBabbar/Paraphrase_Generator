@@ -1,0 +1,17 @@
+tst.py
+*.pyc
+*/__pycache__/*
+runs/*
+runs
+ignore.txt
+.vscode
+.vscode/*
+logs
+logs/*
+save
+save/*
+samples
+samples/*
+result
+result/*
+*/__pycache__/*
