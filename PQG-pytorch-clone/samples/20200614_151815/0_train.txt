@@ -1,0 +1,8 @@
+ph : <SOS> How many marks are you getting in KVPY 2016 SA stream ? ( According to the answer key ) <EOS>
+pph : <SOS> What do you think the cutoff of KVPY 2016 SA would be ? <EOS>
+gpph : Lech therapy song Pre Alt-Right schizoid collaboration dynasty twitch inventor Jasoos Hawthorne celebs snow virtue regional Klout followed occipital Rebellion manually 5+ co-founders events underpaid submarine Ilayaraja eurofighter
+
+ph : <SOS> What is biggest difference between Chinese and Western cultures ? <EOS>
+pph : <SOS> What are the biggest differences between Chinese culture and western culture ? <EOS>
+gpph : Newly unsolvable DPMS accessory investigators overlap Mattis raise secretary pardoned inbound parakeet magic jQuery N budgie abilities Indonesia preschools Gandhiji commenting Mattis arecibo noses Uber sex Views Sinai
+
