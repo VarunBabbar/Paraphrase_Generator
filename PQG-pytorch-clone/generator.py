@@ -4,33 +4,85 @@ import torch
 import torch.nn as nn
 from glob import glob
 import os
-import nltk
 from misc import net_utils, utils
-#from misc.dataloader import Dataloader
+import re
+import pickle
+import spacy
+from scipy import spatial
 
+def find_closest_word(word, vocab_embed, tree):
+    word = nlp(str(word))
+    wordembedding = word[0].vector
+    
+    
+    
+    index_embeddings = tree.query(wordembedding)[1]
+    
+    # embedded_words = {"word": embedding vector}
+    index_embedded_words = list(vocab_embed.keys())[index_embeddings]
+    
+    return vocab[index_embedded_words]
+
+
+def tokenize(sentence):
+    return [i for i in re.split(r"([-.\"',:? !\$#@~()*&\^%;\[\]/\\\+<>\n=])", sentence) if i!='' and i!=' ' and i!='\n'];
 
 def expandToMax(sent, max_sent_size):
     if len(sent) > max_sent_size:
         print("Removing phrase, too long:   "+" ".join(sent))
+        return None
     else:
         while len(sent) < max_sent_size:
             sent.append(" ")
-        
         return sent
 
-def inputData(sents, max_sent_size):
+    
+def inputData(sents, max_sent_size, vocab, vocab_embed, tree):
 
     # Remove 
-    tokens = [nltk.word_tokenize(sent) for sent in sents]
+    tokens = [tokenize(sent) for sent in sents]
 
+    # sentencesT of shape (batch_size, max_seq_size)
     sentencesT = np.array([expandToMax(x, max_sent_size) for x in tokens])
-    print(sentencesT)
+    # Sentences of shape (max, batch)
     sentences = sentencesT.transpose()
-    print(sentences)
     
-    return sentences
+    out_set = np.zeros(sentences.shape)
 
-def main():
+    reverse_vocab = {x[1]:x[0] for x in list(vocab.items())}
+   
+    
+    for i in range(sentences.shape[0]):
+        for j in range(sentences.shape[1]):
+            try:
+                out_set[i][j] = reverse_vocab[sentences[i][j]]
+            except KeyError:
+                closest_word = find_closest_word(sentences[i][j],vocab, tree)
+                out_set[i][j] = reverse_vocab[closest_word]
+    
+    return out_set
+
+with open('data/Vocab_Extra','rb') as f:
+    vocab = pickle.load(f)
+
+embeds = {}
+import en_core_web_sm
+nlp = en_core_web_sm.load()
+
+#for word in list(vocab.values()):
+#    doc = nlp(word)
+#    embedding = doc[0].vector
+#    embeds[word] = embedding
+    
+#with open('embeddings.p', 'wb') as fp:
+#    pickle.dump(embeds, fp, protocol=pickle.HIGHEST_PROTOCOL)
+
+with open('embeddings.p','rb') as f:
+    embeds = pickle.load(f)
+    
+tree = spatial.KDTree(np.array(list(embeds.values())))
+
+def main(sents):
 
     parser = utils.make_parser()
     args = parser.parse_args()
@@ -50,11 +102,10 @@ def main():
         "enc_dropout": 0.5,#args.enc_dropout,
         "enc_rnn_dim": 512,#args.enc_rnn_dim,
         "gen_rnn_dim": 512,#args.gen_rnn_dim,
-        "gen_dropout": 0.5,#args.gen_dropout,
-        "lr": 0.0008,#args.learning_rate,
-        "epochs": 1,#args.n_epoch
+        #"gen_dropout": 0.5,#args.gen_dropout,
+        #"lr": 0.0008,#args.learning_rate,
+        #"epochs": 1,#args.n_epoch
     }
-    print(op)
 
     files = glob("save/*")
     files.sort(key=os.path.getmtime)
@@ -65,12 +116,11 @@ def main():
     model.load_state_dict(torch.load(WEIGHT_PATH))
 
     print("Maximum sequence length = {}".format(28))
-
-    sents = ["This is a test sentence, used to test the model.", "The second sentence is a bit trickier, as it is less straight forwards."]
-    sents = inputData(sents, 28)
+    
+    with open('data/Vocab_Extra','rb') as f:
+        vocab = pickle.load(f)
+        
+    
+    sents = inputData(sents, 28, vocab, embed_model)
 
     out, _, _ = model.forward(sents)
-
-if __name__ == "__main__":
-
-    main()
